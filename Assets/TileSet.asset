@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 129ae4d51ced6c04ea3a437bda0487a4, type: 3}
+  m_Name: TileSet
+  m_EditorClassIdentifier: 
+  tiles:
+  - name: ground
+    tile: {fileID: 11400000, guid: 57505ff442d921444b2a1a8d62037e68, type: 2}
+  - name: air
+    tile: {fileID: 11400000, guid: 97f61579073b5524eb439b39865bc699, type: 2}
