@@ -19,6 +19,7 @@ public class Tile {
 
     public Vector2i position;
     public TileData data;
+    public string status = "";
 
     public Tile[] neighbours = new Tile[8];
     public Tile left {

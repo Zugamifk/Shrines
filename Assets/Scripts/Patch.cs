@@ -99,7 +99,7 @@ public class Patch
                 var e = 0;
                 do
                 {
-                    if (++e > 500) break;
+                    if (n==null || ++e > 500) break;
                     var next = dir + 6;
                     var end = next + 8;
                     var pos = (Vector2)n.value.position;
@@ -125,14 +125,15 @@ public class Patch
                     if (next != end)
                     {
                         dir = next%8;
-                        n = GetNext(g, n, dir);
-                        if (n == null)
+                        var nn = GetNext(g, n, dir);
+                        if (nn == null)
                         {
+                            n.value.status = string.Format("Tile missing neighbour! {0}", dir);
                             Debug.LogErrorFormat("Tile missing neighbour! {0}", dir);
                             break;
                         }
+                        n = nn;
                     }
-
                 } while (n0 != n || start!=dir);
                 if (n != null && pts.Count > 0 && e < 100)
                 {
@@ -215,7 +216,7 @@ public class Patch
     void BuildEdgeGraph()
     {
         edgeGraph = new Graph<Tile>(drawTiles);
-        edgeGraph.Filter(t => t.value.data.collides && t.value.HasNeighbour(n => n != null && !n.data.collides, true));
+        edgeGraph.Filter(t => t.value.data.collides && t.value.HasNeighbour(n => n == null || !n.data.collides, true));
         edgeGraph.Connect((t, l) =>
         {
             foreach (var n in t.neighbours)

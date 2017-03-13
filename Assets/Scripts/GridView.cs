@@ -7,6 +7,7 @@ public class GridView : MonoBehaviour {
     public TileSet tileSet;
     public TileGraphicData graphics;
     public PatchView patchView;
+    public AnimationCurve surfaceCurve;
 
     public Dictionary<Vector2i, Patch> patches = new Dictionary<Vector2i, Patch>();
     public Grid grid;
@@ -42,7 +43,8 @@ public class GridView : MonoBehaviour {
         }
         world.Generate();
         grid = world.grid;
-        var tiling = new Tiling();
+        var tiling = new GroundTiling();
+        tiling.depthLimit = (x,y) => surfaceCurve.Evaluate((float)x/100) > (float)y/100f;
         tiling.Generate(grid, new Dictionary<string, TileData>() { {"ground", tileSet.tiles[0].tile}, {"air", tileSet.tiles[1].tile} }, 0, 0, 100, 100);
         Debug.Log(world.ToString());
         world.grid.Check(true);

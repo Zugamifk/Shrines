@@ -39,6 +39,13 @@ public class GridViewInspector : Editor {
                     var cg = ci.cornerGraph;
                     foreach (var t in cg.nodes)
                     {
+                        var msg = !string.IsNullOrEmpty(t.value.status);
+                        if (msg)
+                        {
+                            Handles.color = Color.green;
+                            Handles.Label((Vector3)t.value.position + offset, t.value.status);
+                        }
+                        Handles.color = msg ? Color.red : Color.white;
                         Handles.DrawSolidDisc((Vector3)t.value.position + offset, normal, radius);
                     }
                     foreach (var e in cg.edges)

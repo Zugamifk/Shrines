@@ -2,18 +2,28 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class Tiling {
-
-    protected List<Tile> worker = new List<Tile>();
+public class GroundTiling : Tiling
+{
+    public System.Func<int, int, bool> depthLimit; 
     public virtual void Generate(Grid grid, Dictionary<string, TileData> tileLookup, int x, int y, int w, int h)
     {
+        if (depthLimit == null)
+        {
+            Debug.LogError("depthLimit is null! Can't produce GroundTiling!");
+            return;
+        }
+
         var count = grid.GetTiles(x, y, w, h, worker);
         for (int i = 0; i < count; i++)
         {
             TileData result = null;
-            if(Random.value > 0.5f ) {
+            var inGround = depthLimit.Invoke(worker[i].position.x, worker[i].position.y);                 
+            if (inGround)
+            {
                 tileLookup.TryGetValue("ground", out result);
-            }  else {
+            }
+            else
+            {
                 tileLookup.TryGetValue("air", out result);
             }
 
