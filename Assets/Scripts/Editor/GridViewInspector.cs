@@ -17,8 +17,6 @@ public class GridViewInspector : Editor {
             if (GUILayout.Button("Generate Patch"))
             {
                 obj.Generate(0, 0);
-                var mf = obj.GetComponent<MeshFilter>();
-                obj.patches[Vector2i.zero].SetDrawMesh(mf);
             }
             if (GUILayout.Button("Test"))
             {
@@ -36,8 +34,9 @@ public class GridViewInspector : Editor {
 
             if (obj.patches!=null && obj.patches.TryGetValue(Vector2i.zero, out patch))
             {
-                foreach (var cg in patch.colliderGraphs)
+                foreach (var ci in patch.colliders)
                 {
+                    var cg = ci.cornerGraph;
                     foreach (var t in cg.nodes)
                     {
                         Handles.DrawSolidDisc((Vector3)t.value.position + offset, normal, radius);

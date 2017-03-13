@@ -6,6 +6,7 @@ public class GridView : MonoBehaviour {
 
     public TileSet tileSet;
     public TileGraphicData graphics;
+    public PatchView patchView;
 
     public Dictionary<Vector2i, Patch> patches = new Dictionary<Vector2i, Patch>();
     public Grid grid;
@@ -28,6 +29,9 @@ public class GridView : MonoBehaviour {
         painting.tileGraphicData = graphics;
         painting.Init();
         patch.Paint(painting);
+
+        patchView.SetPatch(patch);
+        patchView.Enable();
     }
 
     public void TestWorld()
