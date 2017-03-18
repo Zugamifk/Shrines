@@ -4,8 +4,8 @@ using System.Collections.Generic;
 
 public class GroundTiling : Tiling
 {
-    public System.Func<int, int, bool> depthLimit; 
-    public virtual void Generate(Grid grid, Dictionary<string, TileData> tileLookup, int x, int y, int w, int h)
+    public System.Func<float, float> depthLimit; 
+    public virtual void Generate(Grid grid, TileSet tileSet, int x, int y, int w, int h)
     {
         if (depthLimit == null)
         {
@@ -17,14 +17,14 @@ public class GroundTiling : Tiling
         for (int i = 0; i < count; i++)
         {
             TileData result = null;
-            var inGround = depthLimit.Invoke(worker[i].position.x, worker[i].position.y);                 
+            var inGround = depthLimit((float)worker[i].position.x/(float)w) > (float)worker[i].position.y/(float)h;
             if (inGround)
             {
-                tileLookup.TryGetValue("ground", out result);
+                result = tileSet["ground"];
             }
             else
             {
-                tileLookup.TryGetValue("air", out result);
+                result = tileSet["air"];
             }
 
             if (result != null)
@@ -34,6 +34,23 @@ public class GroundTiling : Tiling
             else
             {
                 Debug.LogError("tileLookup up missing \'ground\' or \'air\' tiles!");
+            }
+        }
+
+        for (int i = 30; i < 50; i++)
+        {
+            var j = (int)(h*depthLimit((float)i/(float)w))+4;
+            j = Mathf.Clamp(j, 0, h-1);
+            var tile = grid.GetTile(x + i, j);
+            TileData result = null;
+            result = tileSet["platform"];
+            if (result != null)
+            {
+                tile.data = result;
+            }
+            else
+            {
+                Debug.LogError("tileLookup up missing \'platform\' tiles!");
             }
         }
     }

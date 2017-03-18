@@ -62,6 +62,23 @@ public class Tile {
         set { setNeighbour(2, value); }
     }
 
+    public bool IsEmpty
+    {
+        get
+        {
+            return data != null && data.collisions == TileData.CollisionType.None;
+        }
+    }
+
+    public Tile() { }
+    public static Tile None(Vector2i position)
+    {
+        return new Tile()
+        {
+            position = position
+        };
+    }
+
     void setNeighbour(int i, Tile value)
     {
         if (neighbours[i] != null ^ value != null)
@@ -152,10 +169,10 @@ public class Tile {
     public EdgeType GetEdge()
     {
         int i = 0;
-        if (left != null && !left.data.collides) i++;
-        if (right != null && !right.data.collides) i++;
-        if (top != null && !top.data.collides) i++;
-        if (bottom != null && !bottom.data.collides) i++;
+        if (left.IsEmpty) i++;
+        if (right.IsEmpty) i++;
+        if (top.IsEmpty) i++;
+        if (bottom.IsEmpty) i++;
         return (EdgeType)i;
     }
 

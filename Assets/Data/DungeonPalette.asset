@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cdc779cb844d9b94d9689b44b69b4655, type: 3}
+  m_Name: DungeonPalette
+  m_EditorClassIdentifier: 
+  m_tiles:
+  - name: platform
+    tile: {fileID: 11400000, guid: 65851aa6734069e428468850164dc158, type: 2}
+  - name: ground
+    tile: {fileID: 11400000, guid: cfdcd082871686a4280c0c4e612d6891, type: 2}

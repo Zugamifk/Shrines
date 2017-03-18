@@ -63,10 +63,10 @@ public class Grid {
         if (x < 0) x = 0;
         if (y < 0) y = 0;
 
-        for (int xi = x; xi < w; xi++)
+        for (int xi = x; xi < x+w; xi++)
         {
             var col = grid[xi];
-            for (int yi = y; yi < h; yi++)
+            for (int yi = y; yi < y+h; yi++)
             {
                 var tile = col[yi];
                 if (tile != null)

@@ -7,20 +7,27 @@ public class Patch
 {
     public class ColliderInfo
     {
+        public TileData.CollisionType collisionType;
         public Graph<Tile> cornerGraph;
         public Vector2[] points;
         public Vector2i position;
         public ColliderInfo(Graph<Tile> colliderGraph)
         {
+            collisionType = colliderGraph.nodes[0].value.data.collisions;
             cornerGraph = colliderGraph;
         }
+    }
+
+    public class MeshInfo
+    {
+        public Mesh mesh;
+        public List<Tile> tiles = new List<Tile>();
     }
     public int width;
     public int height;
 
     public List<Tile> currentTiles;
-    public List<Tile> drawTiles;
-    Mesh drawMesh;
+    public Dictionary<string, MeshInfo> meshes;
     public Graph<Tile> edgeGraph;
     public List<ColliderInfo> colliders;
 
@@ -30,25 +37,62 @@ public class Patch
         height = h;
     }
 
-    public void SetDrawMesh(MeshFilter filter)
+    public void SetDrawMesh(MeshFilter filter, string key)
     {
-        filter.mesh = drawMesh;
+        MeshInfo drawMesh = null;
+        meshes.TryGetValue(key, out drawMesh);
+        filter.mesh = drawMesh.mesh;
     }
 
     public void Generate(List<Tile> tileList, TileSet tileSet)
     {
         currentTiles = new List<Tile>(tileList);
-        drawTiles = new List<Tile>(tileList);
-        GenerateDrawMesh(tileList);
+        meshes = new Dictionary<string, MeshInfo>();
+        meshes["ground"] = new MeshInfo();
+        meshes["platform"] = new MeshInfo();
+        foreach (var t in tileList)
+        {
+            string type = "";
+            switch (t.data.collisions)
+            {
+                case TileData.CollisionType.Platform:
+                    {
+                        type = "platform";
+                    } break;
+                case TileData.CollisionType.Solid:
+                    {
+                        type = "ground";
+                    } break;
+            }
+
+            if (!string.IsNullOrEmpty(type))
+            {
+                meshes[type].tiles.Add(t);
+            }
+        }
+        GenerateDrawMesh(meshes["ground"].tiles, "ground");
+        GenerateDrawMesh(meshes["platform"].tiles, "platform");
         BuildEdgeGraph();
         GenerateColliderPaths();
     }
 
-    public void Paint(TilePainting painting)
+    public void PaintAll(TilePainting painting)
     {
-        var uv = drawMesh.uv;
-        painting.Paint(currentTiles, uv);
-        drawMesh.uv = uv;
+        Paint(painting, "ground");
+        Paint(painting, "platform");
+    }
+
+    public void Paint(TilePainting painting, string key)
+    {
+        MeshInfo drawMesh = null;
+        meshes.TryGetValue(key, out drawMesh);
+        if (drawMesh != null)
+        {
+            
+            var uv = drawMesh.mesh.uv;
+            painting.Paint(drawMesh.tiles, uv);
+            drawMesh.mesh.uv = uv;
+        }
     }
 
     void GenerateColliderPaths()
@@ -56,108 +100,151 @@ public class Patch
         var genned = 0;
         var sw = new System.Diagnostics.Stopwatch();
         var time = System.TimeSpan.Zero;
-        var maxE = 0;
         foreach (var ci in colliders)
         {
-        sw.Reset();
-        sw.Start();
-            var g = ci.cornerGraph;
-            var n = g.nodes[0];
-            if (g.nodes.Count == 1)
+            sw.Reset();
+            sw.Start();
+            switch (ci.collisionType)
             {
-                var pos = (Vector2)n.value.position;
-                var pts = new Vector2[] {
+                case TileData.CollisionType.Platform:
+                    {
+                        if (GetPolygonCollider(ci)) genned++;
+                    }; break;
+                case TileData.CollisionType.Solid:
+                    {
+                        if (GetPolygonCollider(ci)) genned++;
+                    }; break;
+                default: break;
+            }
+            if (sw.Elapsed > time)
+            {
+                time = sw.Elapsed;
+            }
+        }
+        Debug.Log("Edge Colliders: " + genned + " Max time: " + time);
+    }
+
+    bool GetPolygonCollider(ColliderInfo ci)
+    {
+        var g = ci.cornerGraph;
+        var n = g.nodes[0];
+        if (g.nodes.Count == 1)
+        {
+            var pos = (Vector2)n.value.position;
+            var pts = new Vector2[] {
                     pos,
                     pos+Vector2.up,
                     pos + Vector2.one,
                     pos+Vector2.right
                 };
-                ci.points = pts;
-                ci.position = pos;
-                genned++;
-            }
-            else
+            ci.points = pts;
+            ci.position = pos;
+            return true;
+        }
+        else
+        {
+            int dir = 1;
+            bool found = false;
+            for (; dir < 8; dir += 2)
             {
-                int dir = 1;
-                bool found = false;
-                for (; dir < 8; dir += 2)
+                var nbr = n.value.neighbours[dir];
+                if (nbr == null || nbr.IsEmpty)
                 {
-                    var nbr = n.value.neighbours[dir];
-                    if (nbr == null || !nbr.data.collides)
+                    found = true;
+                }
+                else if (found && nbr != null && !nbr.IsEmpty)
+                {
+                    break;
+                }
+            }
+            int start = dir % 8;
+            n = GetNext(g, n, start);
+            var n0 = n;
+            var pts = new List<Vector2>();
+            do
+            {
+                var next = dir + 6;
+                var end = next + 8;
+                var pos = (Vector2)n.value.position;
+                for (; next < end; next = next + 2)
+                {
+                    var nbr = n.value.neighbours[next % 8];
+                    if (nbr == null || nbr.IsEmpty)
                     {
-                        found = true;
+                        if (next > dir + 6)
+                        {
+                            pts.Add(pos + GetQuadCorner((next + 6) % 8));
+                        }
                     }
-                    else if (found && nbr != null && nbr.data.collides)
+                    else if (nbr != null && !nbr.IsEmpty)
                     {
+                        if (next == dir + 6)
+                        {
+                            pts.Add(pos + GetQuadCorner((dir + 4) % 8));
+                        }
                         break;
                     }
                 }
-                int start = dir%8;
-                n = GetNext(g, n, start);
-                var n0 = n;
-                var pts = new List<Vector2>();
-                var e = 0;
-                do
+                if (next != end)
                 {
-                    if (n==null || ++e > 500) break;
-                    var next = dir + 6;
-                    var end = next + 8;
-                    var pos = (Vector2)n.value.position;
-                    for (; next < end; next = next + 2)
+                    dir = next % 8;
+                    var nn = GetNext(g, n, dir);
+                    if (nn == null)
                     {
-                        var nbr = n.value.neighbours[next % 8];
-                        if (nbr == null || !nbr.data.collides)
-                        {
-                            if (next > dir + 6)
-                            {
-                                pts.Add(pos+GetQuadCorner((next+6) % 8));
-                            }
-                        }
-                        else if (nbr != null && nbr.data.collides)
-                        {
-                            if (next == dir + 6)
-                            {
-                                pts.Add(pos + GetQuadCorner((dir + 4) % 8));
-                            }
-                            break;
-                        }
+                        n.value.status = string.Format("Tile missing neighbour! {0}", dir);
+                        Debug.LogErrorFormat("Tile missing neighbour! {0}", dir);
+                        break;
                     }
-                    if (next != end)
-                    {
-                        dir = next%8;
-                        var nn = GetNext(g, n, dir);
-                        if (nn == null)
-                        {
-                            n.value.status = string.Format("Tile missing neighbour! {0}", dir);
-                            Debug.LogErrorFormat("Tile missing neighbour! {0}", dir);
-                            break;
-                        }
-                        n = nn;
-                    }
-                } while (n0 != n || start!=dir);
-                if (n != null && pts.Count > 0 && e < 100)
-                {
-                    var pos = (Vector2)n.value.position;
-                    var path = new Vector2[pts.Count];
-                    for (int i = 0; i < pts.Count; i++)
-                    {
-                        path[i] = pts[i];
-                    }
-                    ci.points = path;
-                    ci.position = pos;
-                    genned++;
+                    n = nn;
                 }
-                if (sw.Elapsed > time)
+            } while (n0 != n || start != dir);
+            if (n != null && pts.Count > 0)
+            {
+                var pos = (Vector2)n.value.position;
+                var path = new Vector2[pts.Count];
+                for (int i = 0; i < pts.Count; i++)
                 {
-                    time = sw.Elapsed;
+                    path[i] = pts[i];
                 }
-                if (e > maxE)
-                {
-                    maxE = e;
-                }
+                ci.points = path;
+                ci.position = pos;
+                return true;
             }
+
         }
-        Debug.Log("Edge Colliders: " + genned+" Max time: "+time+" Max E: "+maxE);
+        return false;
+    }
+
+    bool GetPlatformCollider(ColliderInfo ci)
+    {
+        var g = ci.cornerGraph;
+        var n = g.nodes[0];
+        if (g.nodes.Count == 1)
+        {
+            var pos = (Vector2)n.value.position;
+            var pts = new Vector2[] {
+                    pos+Vector2.up,
+                    pos + Vector2.one
+                };
+            ci.points = pts;
+            ci.position = pos;
+            return true;
+        }
+        else if (g.nodes.Count == 2)
+        {
+            var n2 = g.nodes[1];
+            bool swap = (n2.value.position.x < n.value.position.x);
+            var a = swap ? n2.value.position : n.value.position;
+            var b = swap ? n.value.position : n2.value.position;
+            var pts = new Vector2[] {
+                    a+Vector2i.up,
+                    b + Vector2i.one
+                };
+            ci.points = pts;
+            ci.position = a;
+            return true;
+        }
+        return false;
     }
 
     Vector2 GetQuadCorner(int side)
@@ -215,13 +302,14 @@ public class Patch
 
     void BuildEdgeGraph()
     {
-        edgeGraph = new Graph<Tile>(drawTiles);
-        edgeGraph.Filter(t => t.value.data.collides && t.value.HasNeighbour(n => n == null || !n.data.collides, true));
+        edgeGraph = new Graph<Tile>(currentTiles);
+        edgeGraph.Filter(t => !t.value.IsEmpty && t.value.HasNeighbour(n => n == null || n.IsEmpty, true));
         edgeGraph.Connect((t, l) =>
         {
             foreach (var n in t.neighbours)
             {
-                if (n != null && (!t.IsDiagonal(n)) && edgeGraph.Contains(n))
+                // only connect nodes with the same collision type and which are not empty or diagonal to each other
+                if (n != null && (!t.IsDiagonal(n)) && edgeGraph.Contains(n) && n.data.collisions == t.data.collisions)
                 {
                     l.Add(n);
                 }
@@ -246,7 +334,7 @@ public class Patch
                 for (int ni = 1; ni < 8 && !added; ni += 2)
                 {
                     var e = n.value.neighbours[ni];
-                    if (e == null || !e.data.collides)
+                    if (e == null || e.IsEmpty)
                     {
                         // get left and right neighbours
                         var li = (ni + 2) % 8;
@@ -255,8 +343,8 @@ public class Patch
                         var r = n.value.neighbours[ri];
                         // treat tiles off the edge as empty tiles
                         // if either both neighbours are empty or neither, this is an important corner
-                        var rc = r == null || !r.data.collides;
-                        var lc = l == null || !l.data.collides;
+                        var rc = r == null || r.IsEmpty;
+                        var lc = l == null || l.IsEmpty;
                         if (rc || lc)
                         {
                             nl.Add(n.value);
@@ -269,7 +357,7 @@ public class Patch
                     for (int ni = 0; ni < 8 && !added; ni += 2)
                     {
                         var e = n.value.neighbours[ni];
-                        if (e == null || !e.data.collides)
+                        if (e == null || e.IsEmpty)
                         {
                             // get left and right neighbours
                             var li = (ni + 1) % 8;
@@ -278,8 +366,8 @@ public class Patch
                             var r = n.value.neighbours[ri];
                             // treat tiles off the edge as empty tiles
                             // if either both neighbours are empty or neither, this is an important corner
-                            var rc = r == null || !r.data.collides;
-                            var lc = l == null || !l.data.collides;
+                            var rc = r == null || r.IsEmpty;
+                            var lc = l == null || l.IsEmpty;
                             if (rc == lc)
                             {
                                 nl.Add(n.value);
@@ -295,7 +383,7 @@ public class Patch
                         var t = n.value.neighbours[ni * 2 + 1];
                         for (int s = 0; s < 100; s++)
                         {
-                            if (t == null || !t.data.collides)
+                            if (t == null || t.IsEmpty)
                             {
                                 break;
                             }
@@ -322,7 +410,7 @@ public class Patch
         Debug.Log(colliders.Count);
     }
 
-    void GenerateDrawMesh(List<Tile> tileList)
+    void GenerateDrawMesh(List<Tile> tileList, string key)
     {
         if (tileList.Count < 1)
         {
@@ -331,24 +419,16 @@ public class Patch
         }
         Mesh mesh = new Mesh();
         var basePos = tileList[0].position;
-        drawTiles.RemoveAll(t => t.data == null || !t.data.collides);
 
-
-        if (drawTiles.Count < 1)
-        {
-            Debug.LogError("Empty patch!");
-            return;
-        }
-
-        var tileCount = drawTiles.Count;
+        var tileCount = tileList.Count;
         var vertices = new Vector3[tileCount * 4];
         var uv = new Vector2[tileCount * 4];
         var tris = new int[tileCount * 6];
         int vi = 0, ti = 0;
         for (int i = 0; i < tileCount; i++)
         {
-            var tile = drawTiles[i];
-            var pos = (Vector3)(tile.position - basePos);
+            var tile = tileList[i];
+            var pos = (Vector3)(tile.position);
             vertices[vi++] = pos;
             vertices[vi++] = pos + Vector3.up;
             vertices[vi++] = pos + new Vector3(1, 1, 0);
@@ -364,12 +444,6 @@ public class Patch
         mesh.uv = uv;
         mesh.triangles = tris;
 
-        drawMesh = mesh;
+        meshes[key].mesh = mesh;
     }
-
-    void GenerateColliderMeshes()
-    {
-
-    }
-
 }

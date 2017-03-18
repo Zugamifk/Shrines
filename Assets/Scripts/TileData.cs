@@ -3,5 +3,13 @@ using System.Collections;
 
 public class TileData : ScriptableObject {
 
-    public bool collides;
+    public enum CollisionType
+    {
+        None,
+        Solid,
+        Platform
+    }
+
+    public CollisionType collisions;
+
 }

@@ -27,20 +27,18 @@ public class CharacterController : MonoBehaviour {
     public Rigidbody2D rigidbody;
     public float jumpPower;
 
-    public bool facingLeft { get; private set; }
-    public float normalizedSpeed { get; private set; }
-    public float speed {get; private set;}
-    public bool grounded { get; private set; }
+    public bool facingLeft { get; protected set; }
+    public float normalizedSpeed { get; protected set; }
+    public float speed { get; protected set; }
+    public bool grounded { get; protected set; }
 
     public delegate void InputEvent();
     public InputEvent OnJump;
 
-    FootTrigger footTrigger;
+    protected FootTrigger footTrigger;
 
 	// Use this for initialization
-	void Start () {
-        InputManager.RegisterAxisUpdateCallback(InputKey.MOVE_HORIZONTAL, Move);
-        InputManager.RegisterButtonDownCallback(InputKey.BUTTON0, Jump);
+	protected virtual void Start () {
         footTrigger = footCollider.gameObject.AddComponent<FootTrigger>();
         if (footTrigger != null)
         {
@@ -54,14 +52,14 @@ public class CharacterController : MonoBehaviour {
         rigidbody.velocity = new Vector2(speed * Time.fixedDeltaTime, v.y);
     }
 
-    void Move(float value)
+    protected void Move(float value)
     {
         facingLeft = value < 0;
         speed = value * maxSpeed;
         normalizedSpeed = Mathf.Abs(value);
     }
 
-    void Jump()
+    protected void Jump()
     {
         if (grounded)
         {
@@ -73,9 +71,9 @@ public class CharacterController : MonoBehaviour {
         }
     }
 
-    void OnLand(bool landed)
+    protected void OnLand(bool landed)
     {
         grounded = landed;
-        Debug.Log(landed);
     }
+
 }

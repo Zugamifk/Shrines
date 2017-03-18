@@ -11,8 +11,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 129ae4d51ced6c04ea3a437bda0487a4, type: 3}
   m_Name: TileSet
   m_EditorClassIdentifier: 
-  tiles:
-  - name: ground
-    tile: {fileID: 11400000, guid: 57505ff442d921444b2a1a8d62037e68, type: 2}
+  m_tiles:
   - name: air
     tile: {fileID: 11400000, guid: 97f61579073b5524eb439b39865bc699, type: 2}
+  - name: ground
+    tile: {fileID: 11400000, guid: 57505ff442d921444b2a1a8d62037e68, type: 2}
+  - name: platform
+    tile: {fileID: 11400000, guid: 659a7d49ff6b28f41a43bf524870b50a, type: 2}

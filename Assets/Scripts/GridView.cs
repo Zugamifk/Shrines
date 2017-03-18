@@ -5,7 +5,7 @@ using System.Collections.Generic;
 public class GridView : MonoBehaviour {
 
     public TileSet tileSet;
-    public TileGraphicData graphics;
+    public TilePaintingPalette graphics;
     public PatchView patchView;
     public AnimationCurve surfaceCurve;
 
@@ -15,6 +15,11 @@ public class GridView : MonoBehaviour {
 
     [System.NonSerialized]
     Vector2i patchSize = new Vector2i(100, 100);
+
+    void OnEnable()
+    {
+
+    }
 
     public void Generate(int x, int y)
     {
@@ -27,9 +32,8 @@ public class GridView : MonoBehaviour {
         patches[new Vector2i(x, y)] = patch;
 
         var painting = new TilePainting();
-        painting.tileGraphicData = graphics;
-        painting.Init();
-        patch.Paint(painting);
+        painting.palette = graphics;
+        patch.PaintAll(painting);
 
         patchView.SetPatch(patch);
         patchView.Enable();
@@ -44,8 +48,8 @@ public class GridView : MonoBehaviour {
         world.Generate();
         grid = world.grid;
         var tiling = new GroundTiling();
-        tiling.depthLimit = (x,y) => surfaceCurve.Evaluate((float)x/100) > (float)y/100f;
-        tiling.Generate(grid, new Dictionary<string, TileData>() { {"ground", tileSet.tiles[0].tile}, {"air", tileSet.tiles[1].tile} }, 0, 0, 100, 100);
+        tiling.depthLimit = surfaceCurve.Evaluate;
+        tiling.Generate(grid, tileSet, 0, 0, 100, 100);
         Debug.Log(world.ToString());
         world.grid.Check(true);
     }

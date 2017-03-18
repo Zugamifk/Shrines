@@ -2,30 +2,31 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class TileSet : ScriptableObject {
+public class TilePaintingPalette : ScriptableObject {
+
 
     [System.Serializable]
-    public class Tile
+    public class GraphicLookup
     {
         public string name;
-        public TileData tile;
+        public TileGraphicData tile;
     }
 
     [SerializeField]
-    List<Tile> m_tiles;
+    List<GraphicLookup> m_tiles;
 
-    Dictionary<string, TileData> m_lookup = new Dictionary<string, TileData>();
+    Dictionary<string, TileGraphicData> m_lookup = new Dictionary<string, TileGraphicData>();
 
     void OnEnable()
     {
         foreach (var t in m_tiles)
         {
-            if(!string.IsNullOrEmpty(t.name))
+            if (!string.IsNullOrEmpty(t.name))
                 m_lookup[t.name] = t.tile;
         }
     }
 
-    public TileData this[string name]
+    public TileGraphicData this[string name]
     {
         get
         {
